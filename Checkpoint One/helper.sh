@@ -1,3 +1,3 @@
 git add .
 git commit -m "Pushing"
-git Push origin main
+git push origin main
