@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/cise/homes/himakireetikonda/Database_System_Capstone/Checkpoint One/ParseTree.h
+
+/cise/homes/himakireetikonda/Database_System_Capstone/Checkpoint One/lex.yy.c
+stdio.h
+-
+string.h
+-
+errno.h
+-
+stdlib.h
+-
+inttypes.h
+-
+string.h
+-
+stdlib.h
+-
+ParseTree.h
+/cise/homes/himakireetikonda/Database_System_Capstone/Checkpoint One/ParseTree.h
+y.tab.h
+/cise/homes/himakireetikonda/Database_System_Capstone/Checkpoint One/y.tab.h
+unistd.h
+-
+
+/cise/homes/himakireetikonda/Database_System_Capstone/Checkpoint One/y.tab.h
+

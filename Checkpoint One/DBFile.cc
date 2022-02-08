@@ -12,110 +12,81 @@
 
 // stub file .. replace it with your own DBFile.cc
 
-DBFile::DBFile() : databaseFile(), databasePage(), pageNumber(0) {
+DBFile::DBFile() : file(), page(), pageIndex(0) {
 }
 
-/*
-    Creates the corresponding database file from the path mentioned below
-    Returns 1 on successful open; 0 on failed
-*/
+/* Creates a Db file if success return 0 else if fails return 1 */
+
 int DBFile::Create(const char *f_path, fType f_type, void *startup)
 {
+    //try opening file if present else create and open
     try
     {
+        cout << "Database File creating now\n";
         this->fileName = strdup(f_path);
-        this->databaseFile.Open(0, this->fileName);
-        cout << "File created successfully\n";
+        this->file.Open(0, this->fileName);
+        cout << "Database File created\n";
     }
     catch (...)
     {
-        cerr << "Error occured while creating DBFileHeap. \n";
+        cerr << "Exception raised while creating dbfile\n File path:"<<f_path <<std::endl;
         return 0;
     }
     return 1;
 }
 
-// Loads the tbl file into a database file having a set of pages. Each page contains a set of records
+/* Loads the table(schema) from the given path to .bin files */
 void DBFile::Load(Schema &f_schema, const char *loadpath)
 {
-    // Open file in read mode
-    auto *loadFile = fopen(loadpath, "r");
+    //Load the file
+    auto *file1 = fopen(loadpath, "r");
     try
     {
-        if (loadFile == NULL)
-            throw ("File:" + std::string(loadpath) + " error");
+        if (file1 == NULL) //If file is not present at given location throw error
+            throw "Error";
 
         Record record;
-        int recCount = 0;
-
-        while (record.SuckNextRecord(&f_schema, loadFile) == 1)
+        while (record.SuckNextRecord(&f_schema, file1) == 1) //Scan until every record is accessed
         {
             this->Add(record);
-            recCount++;
-            if (recCount % 10000 == 0)
-            {
-                cout << "Record Counter: " << recCount << std::endl;
-                cout << "Page Counter: " << pageNumber << std::endl;
-            }
         }
 
-        //The left over records when the page is not full should be added to a new page at the end of the file.
-        this->databaseFile.AddPage(&this->databasePage, pageNumber++);
-        cout << "Record Counter: " << recCount % 10000 << std::endl;
-        cout << "Page Counter: " << pageNumber << std::endl;
-
-        cout << "---------------------------------------------" << std::endl;
-        cout << "Total number of records added to file = " << recCount << std::endl;
-        cout << "Total number of pages added to file = " << pageNumber << std::endl;
+        this->file.AddPage(&this->page, pageIndex++);
+        cout << "Total number of pages added to file = " << pageIndex << std::endl;
     }
-    catch (exception e)
+    catch (...)
     {
-        cerr << e.what();
-        fclose(loadFile);
+        cerr<<"Error in loading file"<<std::endl;
+        fclose(file1);
     }
 }
 
-/*
-    Opens database file.
-    Returns 1 on success; 0 on failure
-*/
+
+/* Opens a given file if scucess returns 1 else 0 */ 
 int DBFile::Open(const char *f_path)
 {
     try
     {
         this->fileName = strdup(f_path);
-        if(!std::ifstream(this->fileName))
-        {
-            cerr << "ERROR: File does not exist or could not be opened" << std::endl;
-            return 0;
-        }
-        this->databaseFile.Open(1, this->fileName);
+        this->file.Open(1, this->fileName);
         cout << "File present at path: " << std::string(f_path) << " is now opened. \n";
     }
-    catch (exception ex)
+    catch (...)
     {
-        cerr << ex.what();
+        cout << "Failed opening the file at :" << f_path << std::endl;
         return 0;
+
     }
     return 1;
 }
 
-/*
-    Closes database file.
-    Returns 1 on success; 0 on failure
-*/
+/*Closes a opened DBfile if success returns 1 else 0*/
 int DBFile::Close()
 {
     try
     {
         ifstream file(this->fileName);
-        if(file.is_open())
-            this->databaseFile.Close();
-        else
-        {
-            cerr << "In DBFile::Close(), ERROR: File does not exist" << std::endl;
-            return 0;
-        }
+        this->file.Close();
 
     }
     catch (exception e)
@@ -126,64 +97,91 @@ int DBFile::Close()
     return 1;
 }
 
-/*
-    Adds a record to the database file.
-    The new record is added at the end of the last available page
-*/
+
+/*Adding a record to DB file*/
 void DBFile::Add(Record &rec)
 {
-    off_t fileSize = this->databaseFile.GetLength();
+    try
+    {
+         off_t fileSize = this->file.GetLength();
+    int pageFull = this->page.Append(&rec);
 
-    int pageFull = this->databasePage.Append(&rec);
     if (pageFull == 0)  // which means current page is full
     {
-        this->databasePage.EmptyItOut();
-        this->databasePage.Append(&rec);
-        this->databaseFile.AddPage(&this->databasePage, !fileSize ? 0 : fileSize - 1);
-        pageNumber++;
+        this->page.EmptyItOut();
+        this->page.Append(&rec);
+        this->file.AddPage(&this->page, !fileSize ? 0 : fileSize - 1);
+        pageIndex++;
     }
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+    
+   
 }
 
-// Moves the file pointer to point the first record in the file
+
+/* Moving the seeker to the start of file*/
 void DBFile::MoveFirst()
 {
-    if (this->databaseFile.GetLength() != 0)
+    try
     {
-        this->databaseFile.GetPage(&this->databasePage, 0); //get first page
-        cout << "Moved to first Page in Database File\n";
+        if (this->file.GetLength() != 0)
+    {
+        this->file.GetPage(&this->page, 0); //get first page
     }
     else
-        cout << "Cannot MoveFirst in Database File as no pages are available \n";
+        throw "Cannot perform operation move first check whether the data loaded or not\n";
+        
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+    
 }
 
-/*
-    Gets the next record in the file.
-    Returns 1 if record is present; 0 if file is empty
-*/
+/* Get records with no constratints*/
 int DBFile::GetNext(Record &nextRecord)
 {
-    if (!this->databasePage.GetFirst(&nextRecord))
+    try
     {
-        if (++pageNumber >= this->databaseFile.GetLength() - 1)
+        if (!this->page.GetFirst(&nextRecord))
+    {
+        if (++pageIndex >= this->file.GetLength() - 1)
             return 0;
 
-        this->databaseFile.GetPage(&this->databasePage, pageNumber);
-        this->databasePage.GetFirst(&nextRecord);
+        this->file.GetPage(&this->page, pageIndex);
+        this->page.GetFirst(&nextRecord);
+    }
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
     }
     return 1;
 }
 
-/*
-    Gets the next record which matches the cnf expression.
-    Returns 1 if record exists; 0 otherwise
-*/
+
+
+/* Getting records with a given Constraint */
 int DBFile::GetNext(Record &nextRecord, CNF &cnf, Record &literal)
 {
     ComparisonEngine compEngine;
-    while (this->GetNext(nextRecord))   // made changes corresponding to address of nextRec
+    try
     {
+         while (this->GetNext(nextRecord))   // made changes corresponding to address of nextRec
+        {
         if (compEngine.Compare(&nextRecord, &literal, &cnf))
             return 1;
+        }
     }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+   
     return 0;
 }

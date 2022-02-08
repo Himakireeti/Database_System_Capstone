@@ -152,6 +152,7 @@ void Page :: FromBinary (char *bits) {
 		myRecs->Advance ();
 		curPos += len;
 	}
+	
 
 	delete temp;
 }

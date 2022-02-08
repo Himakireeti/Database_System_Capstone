@@ -10,15 +10,9 @@
 
 typedef enum {heap, sorted, tree} fType;
 
-// stub DBFile header..replace it with your own DBFile.h 
 
 class DBFile {
-	private:
-		File databaseFile;
-		Page databasePage;
-		off_t pageNumber;
-		char* fileName;
-
+	
 public:
 	DBFile (); 
 
@@ -32,6 +26,13 @@ public:
 	void Add (Record &addme);
 	int GetNext (Record &fetchme);
 	int GetNext (Record &fetchme, CNF &cnf, Record &literal);
+
+protected:
+		File file; //File reference 
+		Page page; //Page reference
+		off_t pageIndex; //Page index tracker
+		char* fileName; //table name
+
 
 };
 #endif
